@@ -11,6 +11,7 @@ if (!currentUser || currentUser.role !== 'admin') {
 
 document.addEventListener('DOMContentLoaded', () => {
     fetchStudents();
+    fetchStudentStats(); // 👈 add this
     document.getElementById('studentSearch').addEventListener('input', applyFiltersAndSort);
 });
 
@@ -125,6 +126,31 @@ function updateStats(total) {
     if (document.getElementById('statTotal')) {
         document.getElementById('statTotal').textContent = total ?? '—';
     }
+}
+
+// ── Fetch active/archived counts from dashboard stats ──
+async function fetchStudentStats() {
+    try {
+        const res  = await fetch('http://localhost:5000/api/admin/dashboard-stats');
+        const data = await res.json();
+        if (!data.success) return;
+
+        let active = 0, archived = 0;
+        data.studentStats.forEach(stat => {
+            if (stat._id === 'Active')   active   = stat.count;
+            if (stat._id === 'Archived') archived = stat.count;
+        });
+
+        setText('statActive',   active);
+        setText('statArchived', archived);
+    } catch (err) {
+        console.error("Error fetching student stats:", err);
+    }
+}
+
+function setText(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val ?? '—';
 }
 
 // ── 5. Sorting — parameter is key, variable is sortDirection ──

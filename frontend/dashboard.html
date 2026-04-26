@@ -2,48 +2,330 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Student Dashboard</title>
+    <title>My Dashboard | BoardingMS</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* ── Topbar ── */
+        .student-topbar {
+            background: #0f1623;
+            padding: 0 32px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+        .student-topbar .brand { display: flex; align-items: center; gap: 10px; }
+        .student-topbar .brand-icon {
+            width: 30px; height: 30px; background: #4361ee; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; font-size: 13px; color: #fff;
+        }
+        .student-topbar .brand-name { font-size: 14px; font-weight: 600; color: #fff; letter-spacing: -0.3px; }
+        .student-topbar .topbar-right { display: flex; align-items: center; gap: 12px; }
+        .student-topbar .student-chip {
+            display: flex; align-items: center; gap: 8px;
+            background: rgba(255,255,255,0.06); border-radius: 20px; padding: 5px 12px 5px 6px;
+        }
+        .student-topbar .student-avatar {
+            width: 26px; height: 26px; border-radius: 50%; background: #4361ee;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 600; color: #fff; flex-shrink: 0;
+        }
+        .student-topbar .student-chip-name { font-size: 13px; color: rgba(255,255,255,0.8); font-weight: 500; }
+        .student-topbar .logout-btn {
+            background: rgba(239,68,68,0.1); border: none; color: #f87171;
+            font-size: 12px; font-weight: 500; padding: 6px 12px; border-radius: 6px;
+            cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.15s;
+        }
+        .student-topbar .logout-btn:hover { background: rgba(239,68,68,0.2); }
+
+        /* ── Hero ── */
+        .student-hero {
+            background: linear-gradient(135deg, #0f1623 0%, #1a2540 60%, #0f1623 100%);
+            padding: 40px 32px 48px; position: relative; overflow: hidden;
+        }
+        .student-hero::before {
+            content: ''; position: absolute; top: -40px; right: -40px;
+            width: 200px; height: 200px; background: rgba(67,97,238,0.12); border-radius: 50%;
+        }
+        .student-hero::after {
+            content: ''; position: absolute; bottom: -60px; left: 30%;
+            width: 300px; height: 300px; background: rgba(67,97,238,0.06); border-radius: 50%;
+        }
+        .student-hero .greeting { font-size: 13px; color: rgba(255,255,255,0.45); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 6px; }
+        .student-hero .hero-name { font-size: 28px; font-weight: 600; color: #fff; letter-spacing: -0.5px; margin-bottom: 6px; }
+        .student-hero .hero-meta { display: flex; gap: 16px; flex-wrap: wrap; }
+        .student-hero .meta-chip {
+            display: flex; align-items: center; gap: 6px;
+            background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; padding: 4px 12px; font-size: 12px; color: rgba(255,255,255,0.6);
+        }
+        .student-hero .meta-chip i { font-size: 11px; color: #7c9bff; }
+
+        /* ── Room card ── */
+        .room-card {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px; padding: 18px 20px; display: flex; align-items: center; gap: 14px;
+        }
+        .room-card .room-icon {
+            width: 44px; height: 44px; background: rgba(67,97,238,0.2); border-radius: 10px;
+            display: flex; align-items: center; justify-content: center; font-size: 18px; color: #7c9bff; flex-shrink: 0;
+        }
+        .room-card .room-num { font-size: 22px; font-weight: 600; color: #fff; letter-spacing: -0.3px; }
+        .room-card .room-detail { font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 1px; }
+
+        /* ── Page content ── */
+        .student-content { padding: 28px 32px; background: #F4F5F7; min-height: calc(100vh - 60px - 160px); }
+
+        /* ── Overdue pulse ── */
+        @keyframes pulse-red { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .overdue-pulse { animation: pulse-red 2s ease-in-out infinite; }
+
+        /* ── Empty state ── */
+        .empty-state { text-align: center; padding: 48px 24px; color: #9ca3af; }
+        .empty-state i { font-size: 36px; margin-bottom: 12px; color: #d1d5db; display: block; }
+
+        /* ── Animations ── */
+        .fade-in { opacity: 0; transform: translateY(8px); animation: fadeUp 0.4s ease forwards; }
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+        .delay-1 { animation-delay: 0.05s; }
+        .delay-2 { animation-delay: 0.1s; }
+        .delay-3 { animation-delay: 0.15s; }
+        .delay-4 { animation-delay: 0.2s; }
+
+        /* ── Checkbox filter dropdown ── */
+        .filter-dropdown { position: relative; }
+
+        .filter-btn {
+            display: flex; align-items: center; gap: 7px;
+            padding: 7px 12px; border: 1px solid #e5e7eb; border-radius: 8px;
+            background: #fff; color: #374151; font-size: 13px; font-family: 'DM Sans', sans-serif;
+            cursor: pointer; font-weight: 500; transition: border-color 0.15s, box-shadow 0.15s;
+            white-space: nowrap;
+        }
+        .filter-btn:hover { border-color: #d1d5db; }
+        .filter-btn.active { border-color: #4361ee; box-shadow: 0 0 0 3px rgba(67,97,238,0.1); }
+        .filter-btn .filter-count {
+            background: #4361ee; color: #fff;
+            font-size: 10px; font-weight: 600;
+            width: 17px; height: 17px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .filter-panel {
+            position: absolute; top: calc(100% + 6px); right: 0;
+            background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            padding: 8px 0; min-width: 170px; z-index: 100;
+            display: none;
+        }
+        .filter-panel.open { display: block; }
+
+        .filter-panel-label {
+            font-size: 10px; font-weight: 600; color: #9ca3af;
+            text-transform: uppercase; letter-spacing: 0.06em;
+            padding: 6px 14px 4px;
+        }
+
+        .filter-option {
+            display: flex; align-items: center; gap: 9px;
+            padding: 8px 14px; cursor: pointer; transition: background 0.1s;
+        }
+        .filter-option:hover { background: #f9fafb; }
+
+        .filter-option input[type="checkbox"] {
+            width: 14px; height: 14px; accent-color: #4361ee; cursor: pointer; flex-shrink: 0;
+        }
+
+        .filter-option .filter-label { font-size: 13px; color: #374151; font-weight: 400; }
+
+        .filter-option .filter-dot {
+            width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-left: auto;
+        }
+
+        .filter-divider { height: 1px; background: #f3f4f6; margin: 4px 0; }
+
+        .filter-panel-footer {
+            padding: 6px 14px 2px;
+            display: flex; gap: 6px;
+        }
+        .filter-panel-footer button {
+            flex: 1; font-size: 11px; padding: 4px 0; border-radius: 5px; border: 1px solid #e5e7eb;
+            background: none; color: #6b7280; cursor: pointer; font-family: 'DM Sans', sans-serif;
+            transition: background 0.1s;
+        }
+        .filter-panel-footer button:hover { background: #f3f4f6; }
+        .filter-panel-footer button.primary-btn {
+            background: #4361ee; color: #fff; border-color: #4361ee;
+        }
+        .filter-panel-footer button.primary-btn:hover { background: #3451d1; }
+    </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <div class="custom-card p-5 shadow">
-            <h2 class="dashboard-header">Welcome, <span id="userName">Student</span>!</h2>
-            <p class="text-muted">
-                ID: <span id="studentId">---</span> | 
-                Nickname: <span id="nickname">---</span>
-            </p>
-            <hr>
-            
-            <div class="row">
-                <div class="col-md-6">
-                    <h4>🏠 Room Information</h4>
-                    <p class="fs-5">
-                        Room <strong id="roomNum">0</strong> — <span id="floorNum">N/A</span>
-                    </p>
+
+    <!-- ── Topbar ── -->
+    <div class="student-topbar">
+        <div class="brand">
+            <div class="brand-icon"><i class="fas fa-building"></i></div>
+            <div class="brand-name">BoardingMS</div>
+        </div>
+        <div class="topbar-right">
+            <div class="student-chip">
+                <div class="student-avatar" id="avatarInitial">S</div>
+                <span class="student-chip-name" id="topbarName">Student</span>
+            </div>
+            <button class="logout-btn" onclick="logout()">
+                <i class="fas fa-arrow-right-from-bracket me-1"></i>Logout
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Hero ── -->
+    <div class="student-hero">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-8">
+                <div class="greeting">Student Portal</div>
+                <div class="hero-name">Welcome back, <span id="userName">—</span>!</div>
+                <div class="hero-meta mt-3">
+                    <div class="meta-chip"><i class="fas fa-id-card"></i> <span id="studentId">—</span></div>
+                    <div class="meta-chip"><i class="fas fa-user"></i> <span id="nickname">—</span></div>
+                    <div class="meta-chip"><i class="fas fa-graduation-cap"></i> <span id="courseYear">—</span></div>
                 </div>
             </div>
-
-            <h4 class="mt-4">💰 Current Balances</h4>
-            <table class="table table-hover mt-3">
-                <thead class="table-light">
-                    <tr>
-                        <th>Category</th>
-                        <th>Due Date</th> <th>Amount</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="billTableBody"></tbody>
-            </table>
-            
-            <div class="text-end">
-                <button onclick="logout()" class="btn btn-outline-secondary mt-3">Logout</button>
+            <div class="col-lg-4">
+                <div class="room-card">
+                    <div class="room-icon"><i class="fas fa-door-open"></i></div>
+                    <div>
+                        <div class="room-num">Room <span id="roomNum">—</span></div>
+                        <div class="room-detail"><span id="floorNum">—</span> · <span id="roomType">—</span></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- ── Content ── -->
+    <div class="student-content">
+
+        <!-- Stat cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3 fade-in delay-1">
+                <div class="stat-card">
+                    <div class="stat-icon icon-blue"><i class="fas fa-file-invoice"></i></div>
+                    <div class="stat-label">Total Bills</div>
+                    <div class="stat-value" id="statTotal">—</div>
+                </div>
+            </div>
+            <div class="col-md-3 fade-in delay-2">
+                <div class="stat-card">
+                    <div class="stat-icon icon-red"><i class="fas fa-triangle-exclamation"></i></div>
+                    <div class="stat-label">Outstanding</div>
+                    <div class="stat-value amount" id="statOutstanding">—</div>
+                </div>
+            </div>
+            <div class="col-md-3 fade-in delay-3">
+                <div class="stat-card">
+                    <div class="stat-icon icon-amber"><i class="fas fa-hourglass-half"></i></div>
+                    <div class="stat-label">Pending Approval</div>
+                    <div class="stat-value" id="statPending">—</div>
+                </div>
+            </div>
+            <div class="col-md-3 fade-in delay-4">
+                <div class="stat-card">
+                    <div class="stat-icon icon-green"><i class="fas fa-circle-check"></i></div>
+                    <div class="stat-label">Paid This Month</div>
+                    <div class="stat-value" id="statPaid">—</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bills table -->
+        <div class="table-card fade-in delay-2">
+            <div class="table-card-header">
+                <span>My Bills</span>
+
+                <!-- Filter dropdown -->
+                <div class="filter-dropdown" id="filterDropdown">
+                    <button class="filter-btn" id="filterBtn" onclick="toggleFilterPanel()">
+                        <i class="fas fa-filter" style="font-size:11px;"></i>
+                        Filter
+                        <span class="filter-count" id="filterCount">3</span>
+                        <i class="fas fa-chevron-down" style="font-size:10px; color:#9ca3af;"></i>
+                    </button>
+
+                    <div class="filter-panel" id="filterPanel">
+                        <div class="filter-panel-label">Show bill types</div>
+
+                        <label class="filter-option">
+                            <input type="checkbox" id="chk-overdue" checked onchange="applyFilter()">
+                            <span class="filter-label">Overdue</span>
+                            <span class="filter-dot" style="background:#dc2626;"></span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" id="chk-unpaid" checked onchange="applyFilter()">
+                            <span class="filter-label">Unpaid</span>
+                            <span class="filter-dot" style="background:#6b7280;"></span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" id="chk-pending" checked onchange="applyFilter()">
+                            <span class="filter-label">Pending</span>
+                            <span class="filter-dot" style="background:#ca8a04;"></span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" id="chk-paid" onchange="applyFilter()">
+                            <span class="filter-label">Paid</span>
+                            <span class="filter-dot" style="background:#16a34a;"></span>
+                        </label>
+
+                        <div class="filter-divider"></div>
+                        <div class="filter-panel-footer">
+                            <button onclick="selectNone()">None</button>
+                            <button onclick="selectAll()" class="primary-btn">All</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Month</th>
+                            <th onclick="sortBills('due_date')" style="cursor:pointer;">
+                                Due Date <i id="sort-due_date" class="fas fa-sort text-muted ms-1" style="font-size:10px;"></i>
+                            </th>
+                            <th onclick="sortBills('amount')" style="cursor:pointer;">
+                                Amount <i id="sort-amount" class="fas fa-sort text-muted ms-1" style="font-size:10px;"></i>
+                            </th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="billTableBody">
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                <i class="fas fa-spinner fa-spin me-2"></i>Loading your bills…
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Footer: info + pagination -->
+            <div class="d-flex justify-content-between align-items-center px-4 py-3" style="border-top:1px solid #f3f4f6;">
+                <div style="font-size:12px; color:#9ca3af;" id="billFooter">—</div>
+                <nav><ul class="pagination pagination-sm m-0" id="billPagination"></ul></nav>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/dashboard.js"></script>
 </body>
 </html>
