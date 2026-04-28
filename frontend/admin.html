@@ -61,6 +61,47 @@
             </div>
             <div class="topbar-right">
                 <div class="date-badge" id="currentDate">—</div>
+
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" 
+                            data-bs-toggle="dropdown" style="font-size:13px;">
+                        <i class="fas fa-download me-1"></i> Backup
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" style="font-size:13px; min-width:200px;">
+                        <li>
+                            <div style="padding:8px 16px 4px; font-size:10px; font-weight:600; color:#9ca3af; text-transform:uppercase; letter-spacing:0.05em;">
+                                Full Backup
+                            </div>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#" onclick="downloadBackup()">
+                                <i class="fas fa-database me-2" style="color:#4361ee;"></i>JSON Backup (All Data)
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <div style="padding:8px 16px 4px; font-size:10px; font-weight:600; color:#9ca3af; text-transform:uppercase; letter-spacing:0.05em;">
+                                Export as CSV
+                            </div>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#" onclick="exportCSV('students')">
+                                <i class="fas fa-users me-2" style="color:#2563eb;"></i>Students
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#" onclick="exportCSV('rooms')">
+                                <i class="fas fa-door-open me-2" style="color:#ca8a04;"></i>Rooms
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#" onclick="exportCSV('bills')">
+                                <i class="fas fa-file-invoice-dollar me-2" style="color:#16a34a;"></i>Bills
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
             </div>
         </div>
 
@@ -266,6 +307,8 @@
     </div><!-- /page-content-wrapper -->
 </div>
 
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="js/admin.js"></script>
 </body>

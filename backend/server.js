@@ -21,7 +21,7 @@ app.use(express.json());
 connectDB().then(() => {
     
     // Wire up the routes. Notice how the URLs match your frontend requests exactly!
-    app.use('/api', authRoutes);            // Handles /api/login
+    app.use('/api/auth', authRoutes);            // Handles /api/login
     app.use('/api/student', studentRoutes); // Handles /api/student/...
     app.use('/api/admin', adminRoutes);     // Handles /api/admin/...
     app.use('/api/rooms', roomRoutes);

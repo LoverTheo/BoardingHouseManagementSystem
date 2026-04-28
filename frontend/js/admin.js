@@ -206,6 +206,15 @@ function renderStudentChart(active, archived) {
     });
 }
 
+function downloadBackup() {
+    // The browser just follows this link — the server sends back the file
+    window.location.href = 'http://localhost:5000/api/admin/backup';
+}
+
+function exportCSV(type) {
+    window.location.href = `http://localhost:5000/api/admin/export-csv?type=${type}`;
+}
+
 // ── Helpers ──
 function setText(id, value) {
     const el = document.getElementById(id);

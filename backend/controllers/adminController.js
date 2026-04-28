@@ -214,4 +214,126 @@ async function getDashboardStats(req, res) {
     }
 }
 
-module.exports = { getAllUsers, addStudent, deleteStudent, archiveStudent, updateStudent, getDashboardStats };
+async function backupData(req, res) {
+    try {
+        // Fetch all collections — strip passwords from students
+        const students = await Student.find().lean().then(list =>
+            list.map(({ password, __v, ...s }) => s)
+        );
+        const rooms = await Room.find().lean().then(list =>
+            list.map(({ __v, ...r }) => r)
+        );
+        const bills = await Bill.find()
+            .populate('student', 'name student_id')
+            .lean()
+            .then(list => list.map(({ __v, ...b }) => b));
+
+        // PH timestamp
+        const now    = new Date();
+        const phTime = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+        const stamp  = phTime.toISOString().replace('T', ' ').substring(0, 19);
+        const fileTs = phTime.toISOString().substring(0, 10); // 2026-04-28
+
+        const backup = {
+            meta: {
+                system:       'BoardingMS — Boarding House Management System',
+                generated_at:  stamp + ' (PH Time)',
+                generated_by: 'Admin Backup',
+                counts: {
+                    students: students.length,
+                    rooms:    rooms.length,
+                    bills:    bills.length,
+                }
+            },
+            students,
+            rooms,
+            bills,
+        };
+
+        const filename = `BoardingMS_Backup_${fileTs}.json`;
+
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(JSON.stringify(backup, null, 2));
+
+    } catch (error) {
+        console.error("Backup error:", error);
+        res.status(500).json({ success: false, message: "Backup failed." });
+    }
+}
+
+async function exportCSV(req, res) {
+    try {
+        const type = req.query.type || 'students'; // ?type=students|rooms|bills
+
+        const now    = new Date();
+        const phTime = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+        const fileTs = phTime.toISOString().substring(0, 10);
+
+        let csv = '';
+        let filename = '';
+
+        if (type === 'students') {
+            const students = await Student.find().lean();
+            filename = `BoardingMS_Students_${fileTs}.csv`;
+            csv = 'Student ID,Name,Room,Course,Year Level,Contact,Status,Due Day\n';
+            csv += students.map(s =>
+                [
+                    s.student_id,
+                    `"${s.name}"`,
+                    s.room_no || '',
+                    s.profile?.course || '',
+                    s.profile?.year_level || '',
+                    s.profile?.contact || '',
+                    s.status,
+                    s.due_day || ''
+                ].join(',')
+            ).join('\n');
+
+        } else if (type === 'rooms') {
+            const rooms = await Room.find().lean();
+            filename = `BoardingMS_Rooms_${fileTs}.csv`;
+            csv = 'Room No,Floor,Type,Capacity,Occupancy,Monthly Rate,Status\n';
+            csv += rooms.map(r =>
+                [
+                    r.room_no,
+                    `"${r.floor}"`,
+                    `"${r.type}"`,
+                    r.capacity,
+                    r.occupancy_count,
+                    r.base_price,
+                    r.is_occupied ? 'Occupied' : 'Vacant'
+                ].join(',')
+            ).join('\n');
+
+        } else if (type === 'bills') {
+            const bills = await Bill.find()
+                .populate('student', 'name student_id')
+                .lean();
+            filename = `BoardingMS_Bills_${fileTs}.csv`;
+            csv = 'Bill ID,Student ID,Student Name,Category,Month,Amount,Due Date,Status\n';
+            csv += bills.map(b =>
+                [
+                    b.bill_id,
+                    b.student_id,
+                    `"${b.student?.name || 'Unknown'}"`,
+                    b.category,
+                    b.month,
+                    b.amount,
+                    b.due_date,
+                    b.status
+                ].join(',')
+            ).join('\n');
+        }
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(csv);
+
+    } catch (error) {
+        console.error("CSV export error:", error);
+        res.status(500).json({ success: false, message: "Export failed." });
+    }
+}
+
+module.exports = { getAllUsers, addStudent, deleteStudent, archiveStudent, updateStudent, getDashboardStats, backupData, exportCSV };
