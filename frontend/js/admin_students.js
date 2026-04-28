@@ -199,13 +199,17 @@ function prepareAdd() {
     document.getElementById('is_edit_mode').value = "false";
     studentForm.reset();
     document.getElementById('s_id').readOnly = false;
+    clearFormError();
+
+    // Show password hint for add mode
+    document.getElementById('passHint').textContent = "Required for new students.";
+
     loadAvailableRooms();
 }
 
 // ── 9. Prepare Edit ──
 async function prepareEdit(id) {
     try {
-        // ✅ Fixed: now calls studentController route
         const res = await fetch(`http://localhost:5000/api/student/get-student/${id}`);
         const s   = await res.json();
 
@@ -219,6 +223,10 @@ async function prepareEdit(id) {
         document.getElementById('s_contact').value         = s.profile?.contact || '';
         document.getElementById('s_room').value            = s.room_no || '';
         document.getElementById('s_pass').value            = '';
+        clearFormError();
+
+        // Show password hint for edit mode
+        document.getElementById('passHint').textContent = "Leave blank to keep current password. Enter a new one to reset it.";
 
         await loadAvailableRooms(s.room_no);
         studentModal.show();
@@ -308,17 +316,46 @@ studentForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const isEdit = document.getElementById('is_edit_mode').value === "true";
 
+    const student_id = document.getElementById('s_id').value.trim();
+    const name       = document.getElementById('s_name').value.trim();
+    const password   = document.getElementById('s_pass').value;
+    const room_no    = document.getElementById('s_room').value;
+    const course     = document.getElementById('s_course').value.trim();
+    const year       = document.getElementById('s_year').value;
+    const contact    = document.getElementById('s_contact').value.trim();
+
+    // ── Validation ──
+    if (!isEdit) {
+        // Add mode: all fields required
+        if (!student_id)          return showFormError("Student ID is required.");
+        if (!name)                return showFormError("Full name is required.");
+        if (!course)              return showFormError("Course is required.");
+        if (!year)                return showFormError("Year level is required.");
+        if (!contact)             return showFormError("Contact number is required.");
+        if (!room_no)             return showFormError("Please select a room.");
+        if (!password)            return showFormError("Password is required for new students.");
+        if (password.length < 6)  return showFormError("Password must be at least 6 characters.");
+    } else {
+        // Edit mode: password optional, but if entered must meet minimum
+        if (password && password.length < 6) return showFormError("New password must be at least 6 characters.");
+        if (!name)   return showFormError("Full name is required.");
+        if (!course) return showFormError("Course is required.");
+        if (!year)   return showFormError("Year level is required.");
+    }
+
+    clearFormError();
+
     const payload = {
-        student_id: document.getElementById('s_id').value,
-        name:       document.getElementById('s_name').value,
-        password:   document.getElementById('s_pass').value,
-        room_no:    document.getElementById('s_room').value,
-        due_day:    new Date().getDate(),
+        student_id,
+        name,
+        password,   // backend will ignore if blank on edit
+        room_no,
+        due_day: new Date().getDate(),
         profile: {
-            course:      document.getElementById('s_course').value,
-            year_level:  document.getElementById('s_year').value,
-            contact:     document.getElementById('s_contact').value,
-            nickname:    document.getElementById('s_name').value.split(' ')[0],
+            course,
+            year_level: year,
+            contact,
+            nickname: name.split(' ')[0],
         }
     };
 
@@ -335,15 +372,40 @@ studentForm.addEventListener('submit', async (e) => {
         if (res.ok && result.success) {
             studentModal.hide();
             fetchStudents();
+            fetchStudentStats();
             alert(isEdit ? "Student updated!" : "Student added successfully!");
         } else {
-            alert("Error: " + (result.message || "Something went wrong."));
+            showFormError(result.message || "Something went wrong.");
         }
     } catch (err) {
         console.error("Save student error:", err);
-        alert("Server error. Is the backend running?");
+        showFormError("Server error. Is the backend running?");
     }
 });
+
+// ── Form error helpers ──
+function showFormError(msg) {
+    let errEl = document.getElementById('formError');
+    if (!errEl) {
+        errEl = document.createElement('div');
+        errEl.id = 'formError';
+        errEl.style.cssText = `
+            background:#fef2f2; border:1px solid #fecaca; border-radius:8px;
+            padding:10px 13px; font-size:13px; color:#dc2626;
+            display:flex; align-items:center; gap:8px; margin-bottom:12px;
+        `;
+        // Insert before the submit button
+        const saveBtn = document.getElementById('saveBtn');
+        saveBtn.parentNode.insertBefore(errEl, saveBtn);
+    }
+    errEl.innerHTML = `<i class="fas fa-circle-exclamation"></i> ${msg}`;
+    errEl.style.display = 'flex';
+}
+
+function clearFormError() {
+    const errEl = document.getElementById('formError');
+    if (errEl) errEl.style.display = 'none';
+}
 
 // ── 13. Archive ──
 async function archiveStudent(id) {

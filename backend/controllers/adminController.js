@@ -160,11 +160,18 @@ async function archiveStudent(req, res) {
 }
 
 async function updateStudent(req, res) {
-    const { student_id, name, room_no, profile } = req.body;
+    const { student_id, name, room_no, profile, password } = req.body;
     try {
+        const updateData = { name, room_no, profile };
+
+        // Only hash and update password if admin actually typed one
+        if (password && password.trim() !== '') {
+            updateData.password = await bcrypt.hash(password.trim(), 10);
+        }
+
         const updated = await Student.findOneAndUpdate(
             { student_id },
-            { name, room_no, profile },
+            updateData,
             { new: true }
         );
         if (!updated) return res.status(404).json({ success: false, message: "Student not found." });
