@@ -140,15 +140,19 @@ async function archiveStudent(req, res) {
         if (!student) return res.status(404).json({ success: false, message: "Student not found." });
 
         const roomNo = student.room_no;
-        student.status = 'Archived';
-        student.room_no = null;
-        await student.save();
+
+        // ✅ Use findOneAndUpdate + $unset to bypass the required validator
+        await Student.findOneAndUpdate(
+            { student_id },
+            { status: 'Archived', $unset: { room_no: "" } },
+            { returnDocument: 'after', runValidators: false }
+        );
 
         if (roomNo) {
             const room = await Room.findOne({ room_no: roomNo });
             if (room) {
                 room.occupancy_count = Math.max(0, room.occupancy_count - 1);
-                room.is_occupied = false;
+                room.is_occupied = room.occupancy_count >= room.capacity;
                 await room.save();
             }
         }
@@ -162,19 +166,45 @@ async function archiveStudent(req, res) {
 async function updateStudent(req, res) {
     const { student_id, name, room_no, profile, password } = req.body;
     try {
-        const updateData = { name, room_no, profile };
+        const student = await Student.findOne({ student_id });
+        if (!student) return res.status(404).json({ success: false, message: "Student not found." });
 
-        // Only hash and update password if admin actually typed one
+        const oldRoom = student.room_no;
+        const newRoom = room_no;
+        const roomChanged = oldRoom !== newRoom;
+
+        // ── Handle room transfer ──
+        if (roomChanged) {
+            // Decrement old room
+            if (oldRoom) {
+                const prevRoom = await Room.findOne({ room_no: oldRoom });
+                if (prevRoom) {
+                    prevRoom.occupancy_count = Math.max(0, prevRoom.occupancy_count - 1);
+                    prevRoom.is_occupied = prevRoom.occupancy_count >= prevRoom.capacity;
+                    await prevRoom.save();
+                }
+            }
+
+            // Increment new room — but check capacity first
+            if (newRoom) {
+                const nextRoom = await Room.findOne({ room_no: newRoom });
+                if (!nextRoom) return res.status(404).json({ success: false, message: `Room ${newRoom} not found.` });
+                if (nextRoom.occupancy_count >= nextRoom.capacity) {
+                    return res.status(400).json({ success: false, message: `Room ${newRoom} is already full!` });
+                }
+                nextRoom.occupancy_count += 1;
+                nextRoom.is_occupied = nextRoom.occupancy_count >= nextRoom.capacity;
+                await nextRoom.save();
+            }
+        }
+
+        // ── Build update payload ──
+        const updateData = { name, room_no, profile };
         if (password && password.trim() !== '') {
             updateData.password = await bcrypt.hash(password.trim(), 10);
         }
 
-        const updated = await Student.findOneAndUpdate(
-            { student_id },
-            updateData,
-            { new: true }
-        );
-        if (!updated) return res.status(404).json({ success: false, message: "Student not found." });
+        await Student.findOneAndUpdate({ student_id }, updateData, { returnDocument: 'after', runValidators: false });
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -343,4 +373,32 @@ async function exportCSV(req, res) {
     }
 }
 
-module.exports = { getAllUsers, addStudent, deleteStudent, archiveStudent, updateStudent, getDashboardStats, backupData, exportCSV };
+async function syncRoomOccupancy(req, res) {
+    try {
+        const rooms = await Room.find().lean();
+        let synced = 0;
+
+        for (const room of rooms) {
+            // Count active students actually assigned to this room
+            const count = await Student.countDocuments({
+                room_no: room.room_no,
+                status: 'Active'
+            });
+
+            await Room.findOneAndUpdate(
+                { room_no: room.room_no },
+                {
+                    occupancy_count: count,
+                    is_occupied: count >= room.capacity
+                }
+            );
+            synced++;
+        }
+
+        res.json({ success: true, message: `Synced ${synced} rooms.` });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+module.exports = { getAllUsers, addStudent, deleteStudent, archiveStudent, updateStudent, getDashboardStats, backupData, exportCSV, syncRoomOccupancy };

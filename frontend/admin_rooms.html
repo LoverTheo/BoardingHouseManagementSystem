@@ -59,6 +59,9 @@
                 <div class="topbar-sub">Manage room inventory and occupancy</div>
             </div>
             <div class="topbar-right">
+                <button class="btn btn-outline-secondary btn-sm" onclick="syncRooms()" title="Fix occupancy counts">
+                    <i class="fas fa-rotate me-1"></i> Sync Occupancy
+                </button>
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#roomModal" onclick="prepareAdd()">
                     <i class="fas fa-plus me-2"></i>Add Room
                 </button>

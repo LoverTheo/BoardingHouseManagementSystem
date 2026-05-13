@@ -31,7 +31,8 @@ const studentSchema = new mongoose.Schema({
         default: 'Active' 
     },
     // This is our link to the Room model
-    room_no: { type: String, required: true }, 
+    // room_no: { type: String, required: true },
+    room_no: { type: String, required: false, default: null },
     profile: {
         nickname: { type: String },
         contact: { type: String, default: "" },

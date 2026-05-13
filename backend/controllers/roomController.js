@@ -52,7 +52,7 @@ exports.addRoom = async (req, res) => {
 exports.updateRoom = async (req, res) => {
     try {
         const { room_no, ...updateData } = req.body;
-        const updated = await Room.findOneAndUpdate({ room_no }, updateData, { new: true });
+        const updated = await Room.findOneAndUpdate({ room_no }, updateData, { returnDocument: 'after', runValidators: false });
         if (!updated) return res.status(404).json({ success: false, message: "Room not found." });
         res.json({ success: true });
     } catch (error) {

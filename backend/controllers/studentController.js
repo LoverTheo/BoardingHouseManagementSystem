@@ -31,7 +31,7 @@ async function requestPay(req, res) {
         const updated = await Bill.findOneAndUpdate(
             { bill_id },
             { status: "pending" },
-            { new: true }
+            { returnDocument: 'after', runValidators: false }
         );
         if (!updated) return res.status(404).json({ success: false, message: "Bill not found." });
         res.json({ success: true });

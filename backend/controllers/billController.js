@@ -51,7 +51,7 @@ async function updateBill(req, res) {
         const updated = await Bill.findOneAndUpdate(
             { bill_id },
             { amount, due_date },
-            { new: true }
+            { returnDocument: 'after', runValidators: false }
         );
         if (!updated) return res.status(404).json({ success: false, message: "Bill not found." });
         res.json({ success: true });
@@ -66,7 +66,7 @@ async function updateBillStatus(req, res) {
         const updated = await Bill.findOneAndUpdate(
             { bill_id },
             { status },
-            { new: true }
+            { returnDocument: 'after', runValidators: false }
         );
         if (!updated) return res.status(404).json({ success: false, message: "Bill not found." });
         res.json({ success: true });

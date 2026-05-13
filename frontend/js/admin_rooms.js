@@ -311,6 +311,25 @@ async function deleteRoom(roomNo) {
     }
 }
 
+async function syncRooms() {
+    if (!confirm("Recalculate all room occupancy counts from actual student assignments? This fixes any data mismatches.")) return;
+    try {
+        const res    = await fetch('http://localhost:5000/api/admin/sync-rooms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const result = await res.json();
+        if (result.success) {
+            alert(result.message);
+            fetchRooms(); // refresh the table
+        } else {
+            alert("Sync failed: " + result.message);
+        }
+    } catch (err) {
+        alert("Server error.");
+    }
+}
+
 // ── 14. Logout ──
 function logout() {
     if (confirm("Are you sure you want to log out?")) {

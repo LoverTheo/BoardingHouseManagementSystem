@@ -240,52 +240,105 @@ async function prepareEdit(id) {
 async function manageBills(id, name) {
     document.getElementById('billStudentId').value = id;
     document.getElementById('billModalSub').textContent = name || id;
-    document.getElementById('billList').innerHTML = `<p class="text-muted text-center py-3"><i class="fas fa-spinner fa-spin me-2"></i>Loading bills…</p>`;
+    document.getElementById('billList').innerHTML = `
+        <p class="text-muted text-center py-3">
+            <i class="fas fa-spinner fa-spin me-2"></i>Loading bills…
+        </p>`;
 
     billModal.show();
 
     try {
-        // ✅ Fixed: uses the new dedicated bills endpoint
         const res   = await fetch(`http://localhost:5000/api/student/get-bills/${id}`);
         const bills = await res.json();
 
-        const billList = document.getElementById('billList');
-
-        if (!bills || bills.length === 0) {
-            billList.innerHTML = `<p class="text-muted text-center py-3">No bills found for this student.</p>`;
-            return;
-        }
-
-        billList.innerHTML = bills.map((bill, index) => {
-            const statusClass = bill.status === 'paid' ? 'paid' : bill.status === 'pending' ? 'pending' : bill.status === 'overdue' ? 'overdue' : '';
-            const badgeClass  = bill.status === 'paid' ? 'status-paid' : bill.status === 'pending' ? 'status-pending' : 'status-unpaid';
-            return `
-            <div class="bill-card ${statusClass} mb-3">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <strong style="font-size:14px;">${bill.category}</strong>
-                    <span class="badge ${badgeClass}">${bill.status.toUpperCase()}</span>
-                </div>
-                <div style="font-size:11px; color:#9ca3af; margin-bottom:10px;">${bill.month} · Bill #${bill.bill_id}</div>
-                <div class="row g-2">
-                    <div class="col-6">
-                        <label class="form-label">Amount (₱)</label>
-                        <input type="number" class="form-control" id="amt_${index}" value="${bill.amount}">
-                    </div>
-                    <div class="col-6">
-                        <label class="form-label">Due Date</label>
-                        <input type="date" class="form-control" id="date_${index}" value="${bill.due_date}">
-                    </div>
-                </div>
-                <button class="btn btn-primary w-100 mt-3 btn-sm" onclick="updateSingleBill('${bill.bill_id}', ${index})">
-                    <i class="fas fa-save me-1"></i> Save ${bill.category}
-                </button>
-            </div>`;
-        }).join('');
+        renderBillList(bills, false); // false = hide paid initially
 
     } catch (err) {
         console.error("Error loading bills:", err);
-        document.getElementById('billList').innerHTML = `<p class="text-danger text-center py-3">Failed to load bills.</p>`;
+        document.getElementById('billList').innerHTML = `
+            <p class="text-danger text-center py-3">Failed to load bills.</p>`;
     }
+}
+
+// ── 10.1 Render bills (showPaid toggles paid bills visibility) ──
+function renderBillList(bills, showPaid) {
+    const billList = document.getElementById('billList');
+
+    if (!bills || bills.length === 0) {
+        billList.innerHTML = `<p class="text-muted text-center py-3">No bills found for this student.</p>`;
+        return;
+    }
+
+    const activeBills = bills.filter(b => b.status !== 'paid');
+    const paidBills   = bills.filter(b => b.status === 'paid');
+    const toShow      = showPaid ? bills : activeBills;
+
+    if (toShow.length === 0 && !showPaid) {
+        billList.innerHTML = `
+            <div class="text-center py-3">
+                <i class="fas fa-circle-check text-success" style="font-size:24px;"></i>
+                <p class="text-muted mt-2 mb-3">No active bills — all paid!</p>
+                ${paidBills.length > 0 ? `
+                    <button class="btn btn-sm btn-outline-secondary" 
+                        onclick="renderBillList(window._billCache, true)">
+                        <i class="fas fa-history me-1"></i>Show ${paidBills.length} paid bill${paidBills.length !== 1 ? 's' : ''}
+                    </button>` : ''}
+            </div>`;
+        window._billCache = bills;
+        return;
+    }
+
+    // Store bills on window so the toggle button can access them
+    window._billCache = bills;
+
+    const rows = toShow.map((bill, index) => {
+        const isPaid     = bill.status === 'paid';
+        const badgeClass = isPaid ? 'status-paid' : bill.status === 'pending' ? 'status-pending' : 'status-unpaid';
+        const cardClass  = isPaid ? 'paid' : bill.status === 'pending' ? 'pending' : '';
+
+        const editFields = !isPaid ? `
+            <div class="row g-2 mt-1">
+                <div class="col-6">
+                    <label class="form-label">Amount (₱)</label>
+                    <input type="number" class="form-control" id="amt_${index}" value="${bill.amount}">
+                </div>
+                <div class="col-6">
+                    <label class="form-label">Due Date</label>
+                    <input type="date" class="form-control" id="date_${index}" value="${bill.due_date}">
+                </div>
+            </div>
+            <button class="btn btn-primary w-100 mt-3 btn-sm" onclick="updateSingleBill('${bill.bill_id}', ${index})">
+                <i class="fas fa-save me-1"></i> Save ${bill.category}
+            </button>` : `
+            <div style="font-size:12px; color:#16a34a; margin-top:8px;">
+                <i class="fas fa-circle-check me-1"></i>Amount: ₱${parseFloat(bill.amount).toLocaleString()} · Due: ${bill.due_date}
+            </div>`;
+
+        return `
+        <div class="bill-card ${cardClass} mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <strong style="font-size:14px;">${bill.category}</strong>
+                <span class="badge ${badgeClass}">${bill.status.toUpperCase()}</span>
+            </div>
+            <div style="font-size:11px; color:#9ca3af;">${bill.month || '—'} · Bill #${bill.bill_id}</div>
+            ${editFields}
+        </div>`;
+    }).join('');
+
+    // Toggle button
+    const toggleBtn = showPaid
+        ? `<button class="btn btn-sm btn-outline-secondary w-100 mb-3" 
+                onclick="renderBillList(window._billCache, false)">
+                <i class="fas fa-eye-slash me-1"></i>Hide paid bills
+           </button>`
+        : paidBills.length > 0
+            ? `<button class="btn btn-sm btn-outline-secondary w-100 mb-3" 
+                    onclick="renderBillList(window._billCache, true)">
+                    <i class="fas fa-history me-1"></i>Show ${paidBills.length} paid bill${paidBills.length !== 1 ? 's' : ''}
+               </button>`
+            : '';
+
+    billList.innerHTML = toggleBtn + rows;
 }
 
 // ── 11. Update single bill ──
