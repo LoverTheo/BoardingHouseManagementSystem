@@ -59,7 +59,7 @@ function buildCourseYear(profile) {
 // ── 2. Fetch bills ──
 async function fetchBills() {
     try {
-        const res   = await fetch(`http://localhost:5000/api/student/get-bills/${user.student_id}`);
+        const res   = await fetch(`http://10.198.104.172:5000/api/student/get-bills/${user.student_id}`);
         const bills = await res.json();
         allBills = (bills || []).map(b => ({ ...b, _status: effectiveStatus(b) }));
         updateStats();
@@ -228,12 +228,7 @@ function renderBills() {
         }
 
         return `
-        <tr class="align-middle">
-            <td>
-                <div style="font-weight:500; color:#1a1a2e;">${bill.category}</div>
-                <div style="font-size:11px; color:#9ca3af; font-family:'DM Mono',monospace;">${bill.bill_id}</div>
-            </td>
-            <td style="font-size:13px; color:#6b7280;">${bill.month || '—'}</td>
+        <tr class="align-middle">           
             <td>
                 <span style="font-family:'DM Mono',monospace; font-size:13px; ${isOverdue ? 'color:#dc2626;' : 'color:#374151;'}">
                     ${bill.due_date || '—'}
@@ -290,7 +285,7 @@ function changePage(page) {
 async function requestPayment(billId) {
     if (!confirm("Submit this bill for admin payment review?")) return;
     try {
-        const res    = await fetch('http://localhost:5000/api/student/request-pay', {
+        const res    = await fetch('http://10.198.104.172:5000/api/student/request-pay', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ student_id: user.student_id, bill_id: billId })

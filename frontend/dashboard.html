@@ -3,6 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>My Dashboard | BoardingMS</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -214,28 +215,28 @@
 
         <!-- Stat cards -->
         <div class="row g-3 mb-4">
-            <div class="col-md-3 fade-in delay-1">
+            <div class="col-6 col-md-3 fade-in delay-1">
                 <div class="stat-card">
                     <div class="stat-icon icon-blue"><i class="fas fa-file-invoice"></i></div>
                     <div class="stat-label">Total Bills</div>
                     <div class="stat-value" id="statTotal">—</div>
                 </div>
             </div>
-            <div class="col-md-3 fade-in delay-2">
+            <div class="col-6 col-md-3 fade-in delay-2">
                 <div class="stat-card">
                     <div class="stat-icon icon-red"><i class="fas fa-triangle-exclamation"></i></div>
                     <div class="stat-label">Outstanding</div>
                     <div class="stat-value amount" id="statOutstanding">—</div>
                 </div>
             </div>
-            <div class="col-md-3 fade-in delay-3">
+            <div class="col-6 col-md-3 fade-in delay-3">
                 <div class="stat-card">
                     <div class="stat-icon icon-amber"><i class="fas fa-hourglass-half"></i></div>
                     <div class="stat-label">Pending Approval</div>
                     <div class="stat-value" id="statPending">—</div>
                 </div>
             </div>
-            <div class="col-md-3 fade-in delay-4">
+            <div class="col-6 col-md-3 fade-in delay-4">
                 <div class="stat-card">
                     <div class="stat-icon icon-green"><i class="fas fa-circle-check"></i></div>
                     <div class="stat-label">Paid This Month</div>
@@ -295,8 +296,8 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
-                            <th>Category</th>
-                            <th>Month</th>
+                            <!-- <th>Category</th> -->
+                            <!-- <th>Month</th> -->
                             <th onclick="sortBills('due_date')" style="cursor:pointer;">
                                 Due Date <i id="sort-due_date" class="fas fa-sort text-muted ms-1" style="font-size:10px;"></i>
                             </th>
