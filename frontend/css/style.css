@@ -347,3 +347,37 @@ h1, h2, h3, h4, h5, h6 {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+
+/* for admin bills filter time based function */
+/* ── Time range filter ── */
+.time-range-group {
+    display: flex;
+    gap: 4px;
+    background: #f3f4f6;
+    padding: 4px;
+    border-radius: 10px;
+}
+
+.time-range-btn {
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.time-range-btn:hover { background: #e5e7eb; color: #374151; }
+
+.time-range-btn.active {
+    background: #fff;
+    color: #1a1a2e;
+    font-weight: 600;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}

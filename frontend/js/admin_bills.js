@@ -11,76 +11,134 @@ if (!currentUser || currentUser.role !== 'admin') {
 
 // ── PH time helper ──
 function getToday() {
-    const now    = new Date();
-    const offset = now.getTimezoneOffset() * 60000;
-    return new Date(now - offset).toISOString().split('T')[0];
+    const now = new Date();
+    return new Date(now - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 }
 
-// ── Resolve effective status (adds 'overdue' for past-due unpaid bills) ──
 function effectiveStatus(bill) {
     if (bill.status === 'paid' || bill.status === 'pending') return bill.status;
     if (bill.due_date && bill.due_date < getToday()) return 'overdue';
-    return bill.status; // 'unpaid'
+    return bill.status;
 }
 
-// ── Raw data (fetched once, split client-side) ──
-let allBills    = [];  // all bills from API
-let activeBills = [];  // unpaid + overdue + pending
-let paidBills   = [];  // paid only
+// ── Raw data ──
+let allBills    = [];
+let activeBills = [];
+let paidBills   = [];
+
+// ── Time range state ──
+let currentRange = 'all';
 
 // ── Active list state ──
-let activeFiltered   = [];
-let activeSortField  = 'due_date';
-let activeSortAsc    = true;
-let activePage       = 1;
-const activePerPage  = 10;
+let activeFiltered  = [];
+let activeSortField = 'due_date';
+let activeSortAsc   = true;
+let activePage      = 1;
+const activePerPage = 10;
 
 // ── Paid list state ──
-let paidFiltered   = [];
-let paidSortField  = 'due_date';
-let paidSortAsc    = false;  // newest first by default
-let paidPage       = 1;
-const paidPerPage  = 10;
+let paidFiltered  = [];
+let paidSortField = 'paid_date';
+let paidSortAsc   = false;   // newest paid first by default
+let paidPage      = 1;
+const paidPerPage = 10;
 
 // ═══════════════════════════════════════════
-// 1. FETCH ALL BILLS
+// 1. FETCH
 // ═══════════════════════════════════════════
 async function fetchAllBills() {
     try {
-        const res  = await fetch('http://localhost:5000/api/bills/all-bills');
+        const res   = await fetch('http://localhost:5000/api/bills/all-bills');
         const bills = await res.json();
 
         allBills = bills.map(b => ({
             ...b,
             _effectiveStatus: effectiveStatus(b),
-            _name:   b.student?.name    || 'Unknown',
-            _room:   b.student?.room_no || 'N/A',
+            _name: b.student?.name    || 'Unknown',
+            _room: b.student?.room_no || 'N/A',
         }));
 
-        // Split into two pools
-        activeBills = allBills.filter(b => b._effectiveStatus !== 'paid');
-        paidBills   = allBills.filter(b => b._effectiveStatus === 'paid');
-
-        updateStatCards();
-
-        // Apply initial filters + render both tables
-        applyActiveFilters();
-        applyPaidFilters();
-
+        applyRangeAndRender();
     } catch (err) {
         console.error("Error loading bills:", err);
         document.getElementById('activeBillTable').innerHTML =
-            `<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-circle-exclamation me-2"></i>Failed to load bills. Is the server running?</td></tr>`;
+            `<tr><td colspan="7" class="text-center py-4 text-muted">
+                <i class="fas fa-circle-exclamation me-2"></i>Failed to load bills.
+            </td></tr>`;
     }
 }
 
 // ═══════════════════════════════════════════
-// 2. STAT CARDS
+// 2. TIME RANGE FILTER
 // ═══════════════════════════════════════════
-function updateStatCards() {
+function applyTimeRange(btn) {
+    // Update active button style
+    document.querySelectorAll('.time-range-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentRange = btn.dataset.range;
+
+    // Update the label on the stat card footer
+    const labels = {
+        all:        'All time',
+        this_month: 'This month',
+        prev_month: 'Previous month',
+        this_year:  'This year',
+        prev_year:  'Previous year',
+    };
+    setText('statRangeLabel', labels[currentRange] || 'All time');
+
+    applyRangeAndRender();
+}
+
+// Returns only bills that fall within the selected time range
+function filterByRange(bills) {
+    if (currentRange === 'all') return bills;
+
+    const now      = new Date();
+    const thisYear = now.getFullYear();
+    const thisMon  = now.getMonth(); // 0-indexed
+
+    return bills.filter(b => {
+        const dateStr = b.due_date || b.paid_date;
+        if (!dateStr) return false;
+        const d = new Date(dateStr);
+
+        switch (currentRange) {
+            case 'this_month':
+                return d.getFullYear() === thisYear && d.getMonth() === thisMon;
+            case 'prev_month': {
+                const pm = thisMon === 0 ? 11 : thisMon - 1;
+                const py = thisMon === 0 ? thisYear - 1 : thisYear;
+                return d.getFullYear() === py && d.getMonth() === pm;
+            }
+            case 'this_year':
+                return d.getFullYear() === thisYear;
+            case 'prev_year':
+                return d.getFullYear() === thisYear - 1;
+            default:
+                return true;
+        }
+    });
+}
+
+function applyRangeAndRender() {
+    const ranged = filterByRange(allBills);
+
+    activeBills = ranged.filter(b => b._effectiveStatus !== 'paid');
+    paidBills   = ranged.filter(b => b._effectiveStatus === 'paid');
+
+    updateStatCards(ranged);
+    applyActiveFilters();
+    applyPaidFilters();
+}
+
+// ═══════════════════════════════════════════
+// 3. STAT CARDS
+// ═══════════════════════════════════════════
+function updateStatCards(bills) {
     let expected = 0, collected = 0, unpaid = 0, pending = 0;
 
-    allBills.forEach(b => {
+    bills.forEach(b => {
         const amt = parseFloat(b.amount) || 0;
         expected += amt;
         if (b._effectiveStatus === 'paid')    collected += amt;
@@ -95,7 +153,7 @@ function updateStatCards() {
 }
 
 // ═══════════════════════════════════════════
-// 3. ACTIVE LIST — filter → sort → paginate → render
+// 4. ACTIVE LIST
 // ═══════════════════════════════════════════
 function applyActiveFilters() {
     const search   = document.getElementById('activeSearch').value.trim().toLowerCase();
@@ -114,12 +172,7 @@ function applyActiveFilters() {
 }
 
 function sortActive(field) {
-    if (activeSortField === field) {
-        activeSortAsc = !activeSortAsc;
-    } else {
-        activeSortField = field;
-        activeSortAsc   = true;
-    }
+    activeSortField = activeSortField === field ? (activeSortAsc = !activeSortAsc, field) : (activeSortAsc = true, field);
     activePage = 1;
     sortAndRenderActive();
 }
@@ -132,7 +185,6 @@ function sortAndRenderActive() {
         if (va > vb) return activeSortAsc ?  1 : -1;
         return 0;
     });
-
     updateSortIcons('active', activeSortField, activeSortAsc);
     renderActiveTable();
     renderPaginationBar('active', activePage, Math.ceil(activeFiltered.length / activePerPage), activeFiltered.length);
@@ -145,7 +197,9 @@ function renderActiveTable() {
     const slice = activeFiltered.slice(start, start + activePerPage);
 
     if (slice.length === 0) {
-        body.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-check-circle me-2 text-success"></i>No active bills — all clear!</td></tr>`;
+        body.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">
+            <i class="fas fa-check-circle me-2 text-success"></i>No active bills — all clear!
+        </td></tr>`;
         return;
     }
 
@@ -157,7 +211,8 @@ function renderActiveTable() {
                          : status === 'pending' ? 'status-pending'
                          : 'status-unpaid';
 
-        const action = status === 'pending'
+        // Action column — mark paid (pending only) + delete
+        const markPaidBtn = status === 'pending'
             ? `<button class="btn btn-sm btn-primary" onclick="markAsPaid('${bill.student_id}', '${bill.bill_id}')">
                    <i class="fas fa-check me-1"></i>Mark Paid
                </button>`
@@ -174,7 +229,15 @@ function renderActiveTable() {
             <td><span class="amount">₱${amt.toLocaleString()}</span></td>
             <td style="font-family:'DM Mono',monospace; font-size:13px;">${bill.due_date || '—'}</td>
             <td><span class="badge ${badgeClass}">${status.toUpperCase()}</span></td>
-            <td>${action}</td>
+            <td>
+                <div class="d-flex gap-1 align-items-center">
+                    ${markPaidBtn}
+                    <button class="btn btn-sm" style="background:#fee2e2; color:#dc2626; border:none;"
+                        onclick="deleteBill('${bill.bill_id}')" title="Delete bill">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
         </tr>`;
     }).join('');
 }
@@ -188,7 +251,7 @@ function changeActivePage(page) {
 }
 
 // ═══════════════════════════════════════════
-// 4. PAID LIST — filter → sort → paginate → render
+// 5. PAID LIST
 // ═══════════════════════════════════════════
 function applyPaidFilters() {
     const search   = document.getElementById('paidSearch').value.trim().toLowerCase();
@@ -205,12 +268,7 @@ function applyPaidFilters() {
 }
 
 function sortPaid(field) {
-    if (paidSortField === field) {
-        paidSortAsc = !paidSortAsc;
-    } else {
-        paidSortField = field;
-        paidSortAsc   = true;
-    }
+    paidSortField = paidSortField === field ? (paidSortAsc = !paidSortAsc, field) : (paidSortAsc = true, field);
     paidPage = 1;
     sortAndRenderPaid();
 }
@@ -223,7 +281,6 @@ function sortAndRenderPaid() {
         if (va > vb) return paidSortAsc ?  1 : -1;
         return 0;
     });
-
     updateSortIcons('paid', paidSortField, paidSortAsc);
     renderPaidTable();
     renderPaginationBar('paid', paidPage, Math.ceil(paidFiltered.length / paidPerPage), paidFiltered.length);
@@ -236,7 +293,7 @@ function renderPaidTable() {
     const slice = paidFiltered.slice(start, start + paidPerPage);
 
     if (slice.length === 0) {
-        body.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">No payment records found.</td></tr>`;
+        body.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">No payment records found.</td></tr>`;
         return;
     }
 
@@ -252,6 +309,9 @@ function renderPaidTable() {
             <td><span class="badge status-unpaid">${bill.category}</span></td>
             <td><span class="amount">₱${amt.toLocaleString()}</span></td>
             <td style="font-family:'DM Mono',monospace; font-size:13px;">${bill.due_date || '—'}</td>
+            <td style="font-family:'DM Mono',monospace; font-size:13px; color:#16a34a;">
+                ${bill.paid_date || '—'}
+            </td>
             <td><span class="badge status-paid"><i class="fas fa-check me-1"></i>PAID</span></td>
         </tr>`;
     }).join('');
@@ -266,22 +326,20 @@ function changePaidPage(page) {
 }
 
 // ═══════════════════════════════════════════
-// 5. SHARED HELPERS
+// 6. SHARED HELPERS
 // ═══════════════════════════════════════════
-
-// Map field key to a sortable value
 function getSortValue(bill, field) {
     switch (field) {
-        case 'name':     return bill._name.toLowerCase();
-        case 'room':     return bill._room.toLowerCase();
-        case 'category': return bill.category?.toLowerCase() || '';
-        case 'amount':   return parseFloat(bill.amount) || 0;
-        case 'due_date': return bill.due_date || '';
-        default:         return '';
+        case 'name':      return bill._name.toLowerCase();
+        case 'room':      return bill._room.toLowerCase();
+        case 'category':  return bill.category?.toLowerCase() || '';
+        case 'amount':    return parseFloat(bill.amount) || 0;
+        case 'due_date':  return bill.due_date  || '';
+        case 'paid_date': return bill.paid_date || '';  // ← new
+        default:          return '';
     }
 }
 
-// Update sort arrow icons for a given table ('active' or 'paid')
 function updateSortIcons(table, activeField, isAsc) {
     const prefix = `sort-${table}-`;
     document.querySelectorAll(`[id^="${prefix}"]`).forEach(icon => {
@@ -296,11 +354,10 @@ function updateSortIcons(table, activeField, isAsc) {
     }
 }
 
-// Render a pagination bar — calls changeActivePage or changePaidPage
 function renderPaginationBar(table, currentPage, totalPages, totalItems) {
-    const infoEl = document.getElementById(`${table}PageInfo`);
-    const navEl  = document.getElementById(`${table}Pagination`);
-    const fn     = table === 'active' ? 'changeActivePage' : 'changePaidPage';
+    const infoEl  = document.getElementById(`${table}PageInfo`);
+    const navEl   = document.getElementById(`${table}Pagination`);
+    const fn      = table === 'active' ? 'changeActivePage' : 'changePaidPage';
     const perPage = table === 'active' ? activePerPage : paidPerPage;
 
     const from = totalItems === 0 ? 0 : (currentPage - 1) * perPage + 1;
@@ -311,15 +368,21 @@ function renderPaginationBar(table, currentPage, totalPages, totalItems) {
     navEl.innerHTML = '';
     if (totalPages <= 1) return;
 
-    navEl.innerHTML += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><button class="page-link" onclick="${fn}(${currentPage - 1})"><i class="fas fa-chevron-left"></i></button></li>`;
+    navEl.innerHTML += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+        <button class="page-link" onclick="${fn}(${currentPage - 1})"><i class="fas fa-chevron-left"></i></button>
+    </li>`;
 
     const start = Math.max(1, currentPage - 2);
     const end   = Math.min(totalPages, currentPage + 2);
     for (let i = start; i <= end; i++) {
-        navEl.innerHTML += `<li class="page-item ${i === currentPage ? 'active' : ''}"><button class="page-link" onclick="${fn}(${i})">${i}</button></li>`;
+        navEl.innerHTML += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+            <button class="page-link" onclick="${fn}(${i})">${i}</button>
+        </li>`;
     }
 
-    navEl.innerHTML += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><button class="page-link" onclick="${fn}(${currentPage + 1})"><i class="fas fa-chevron-right"></i></button></li>`;
+    navEl.innerHTML += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+        <button class="page-link" onclick="${fn}(${currentPage + 1})"><i class="fas fa-chevron-right"></i></button>
+    </li>`;
 }
 
 function setText(id, val) {
@@ -328,11 +391,10 @@ function setText(id, val) {
 }
 
 // ═══════════════════════════════════════════
-// 6. MARK AS PAID
+// 7. MARK AS PAID
 // ═══════════════════════════════════════════
 async function markAsPaid(studentId, billId) {
     if (!confirm("Confirm payment for this bill?")) return;
-
     try {
         const res    = await fetch('http://localhost:5000/api/bills/update-bill-status', {
             method: 'POST',
@@ -340,24 +402,43 @@ async function markAsPaid(studentId, billId) {
             body: JSON.stringify({ student_id: studentId, bill_id: billId, status: 'paid' })
         });
         const result = await res.json();
-
         if (res.ok && result.success) {
-            fetchAllBills(); // Re-fetch and re-render both tables
+            fetchAllBills();
         } else {
             alert("Error: " + (result.error || "Could not update."));
         }
     } catch (err) {
-        console.error("Network Error:", err);
         alert("Server error. Is the backend running?");
     }
 }
 
 // ═══════════════════════════════════════════
-// 7. GENERATE MONTHLY BILLS
+// 8. DELETE BILL
+// ═══════════════════════════════════════════
+async function deleteBill(billId) {
+    if (!confirm(`Delete bill ${billId}? This cannot be undone.`)) return;
+    try {
+        const res    = await fetch('http://localhost:5000/api/bills/delete-bill', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bill_id: billId })
+        });
+        const result = await res.json();
+        if (result.success) {
+            fetchAllBills();
+        } else {
+            alert("Error: " + (result.message || "Could not delete."));
+        }
+    } catch (err) {
+        alert("Server error.");
+    }
+}
+
+// ═══════════════════════════════════════════
+// 9. GENERATE MONTHLY BILLS
 // ═══════════════════════════════════════════
 async function triggerMonthlyBilling() {
     if (!confirm("Generate Rent and Electricity bills for all active students for the current month?")) return;
-
     try {
         const now = new Date();
         const res = await fetch('http://localhost:5000/api/bills/generate-monthly', {
@@ -365,7 +446,6 @@ async function triggerMonthlyBilling() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ month: now.getMonth() + 1, year: now.getFullYear() })
         });
-
         if (res.ok) {
             const result = await res.json();
             alert(`Success! Generated bills for ${result.count} student(s).`);
@@ -379,7 +459,7 @@ async function triggerMonthlyBilling() {
 }
 
 // ═══════════════════════════════════════════
-// 8. LOGOUT
+// 10. LOGOUT
 // ═══════════════════════════════════════════
 function logout() {
     if (confirm("Are you sure you want to log out?")) {

@@ -57,6 +57,20 @@
 
         <div class="main-content">
 
+            <!-- ── Time Range Filter ── -->
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div style="font-size:13px; color:#6b7280; font-weight:500;">
+                    <i class="fas fa-calendar-alt me-2 text-primary"></i>Showing data for:
+                </div>
+                <div class="time-range-group">
+                    <button class="time-range-btn active" data-range="all"        onclick="applyTimeRange(this)">All Time</button>
+                    <button class="time-range-btn"        data-range="this_month" onclick="applyTimeRange(this)">This Month</button>
+                    <button class="time-range-btn"        data-range="prev_month" onclick="applyTimeRange(this)">Prev Month</button>
+                    <button class="time-range-btn"        data-range="this_year"  onclick="applyTimeRange(this)">This Year</button>
+                    <button class="time-range-btn"        data-range="prev_year"  onclick="applyTimeRange(this)">Prev Year</button>
+                </div>
+            </div>
+
             <!-- Stat cards -->
             <div class="row g-3 mb-4">
                 <div class="col-md-3">
@@ -64,6 +78,7 @@
                         <div class="stat-icon icon-blue"><i class="fas fa-file-invoice"></i></div>
                         <div class="stat-label">Total Expected</div>
                         <div class="stat-value amount" id="totalExpected">₱0</div>
+                        <div class="stat-footer" id="statRangeLabel">All time</div>
                     </div>
                 </div>
                 <div class="col-md-3">
@@ -119,13 +134,13 @@
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th onclick="sortActive('name')" style="cursor:pointer;">Student <i id="sort-active-name" class="fas fa-sort text-muted ms-1" style="font-size:10px;"></i></th>
-                                <th onclick="sortActive('room')" style="cursor:pointer;">Room <i id="sort-active-room" class="fas fa-sort text-muted ms-1" style="font-size:10px;"></i></th>
+                                <th onclick="sortActive('name')"     style="cursor:pointer;">Student  <i id="sort-active-name"     class="fas fa-sort text-muted ms-1" style="font-size:10px;"></i></th>
+                                <th onclick="sortActive('room')"     style="cursor:pointer;">Room     <i id="sort-active-room"     class="fas fa-sort text-muted ms-1" style="font-size:10px;"></i></th>
                                 <th onclick="sortActive('category')" style="cursor:pointer;">Category <i id="sort-active-category" class="fas fa-sort text-muted ms-1" style="font-size:10px;"></i></th>
-                                <th onclick="sortActive('amount')" style="cursor:pointer;">Amount <i id="sort-active-amount" class="fas fa-sort text-muted ms-1" style="font-size:10px;"></i></th>
+                                <th onclick="sortActive('amount')"   style="cursor:pointer;">Amount   <i id="sort-active-amount"   class="fas fa-sort text-muted ms-1" style="font-size:10px;"></i></th>
                                 <th onclick="sortActive('due_date')" style="cursor:pointer;">Due Date <i id="sort-active-due_date" class="fas fa-sort text-muted ms-1" style="font-size:10px;"></i></th>
                                 <th>Status</th>
-                                <th>Action</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="activeBillTable">
@@ -164,16 +179,17 @@
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th onclick="sortPaid('name')" style="cursor:pointer;">Student <i id="sort-paid-name" class="fas fa-sort text-muted ms-1" style="font-size:10px;"></i></th>
-                                <th onclick="sortPaid('room')" style="cursor:pointer;">Room <i id="sort-paid-room" class="fas fa-sort text-muted ms-1" style="font-size:10px;"></i></th>
-                                <th onclick="sortPaid('category')" style="cursor:pointer;">Category <i id="sort-paid-category" class="fas fa-sort text-muted ms-1" style="font-size:10px;"></i></th>
-                                <th onclick="sortPaid('amount')" style="cursor:pointer;">Amount <i id="sort-paid-amount" class="fas fa-sort text-muted ms-1" style="font-size:10px;"></i></th>
-                                <th onclick="sortPaid('due_date')" style="cursor:pointer;">Due Date <i id="sort-paid-due_date" class="fas fa-sort text-muted ms-1" style="font-size:10px;"></i></th>
+                                <th onclick="sortPaid('name')"      style="cursor:pointer;">Student   <i id="sort-paid-name"      class="fas fa-sort text-muted ms-1" style="font-size:10px;"></i></th>
+                                <th onclick="sortPaid('room')"      style="cursor:pointer;">Room      <i id="sort-paid-room"      class="fas fa-sort text-muted ms-1" style="font-size:10px;"></i></th>
+                                <th onclick="sortPaid('category')"  style="cursor:pointer;">Category  <i id="sort-paid-category"  class="fas fa-sort text-muted ms-1" style="font-size:10px;"></i></th>
+                                <th onclick="sortPaid('amount')"    style="cursor:pointer;">Amount    <i id="sort-paid-amount"    class="fas fa-sort text-muted ms-1" style="font-size:10px;"></i></th>
+                                <th onclick="sortPaid('due_date')"  style="cursor:pointer;">Due Date  <i id="sort-paid-due_date"  class="fas fa-sort text-muted ms-1" style="font-size:10px;"></i></th>
+                                <th onclick="sortPaid('paid_date')" style="cursor:pointer;">Paid Date <i id="sort-paid-paid_date" class="fas fa-sort text-muted ms-1" style="font-size:10px;"></i></th>
                                 <th>Status</th>
                             </tr>
                         </thead>
                         <tbody id="paidBillTable">
-                            <tr><td colspan="6" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading…</td></tr>
+                            <tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading…</td></tr>
                         </tbody>
                     </table>
                 </div>
