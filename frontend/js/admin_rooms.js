@@ -28,7 +28,7 @@ let searchTimeout;
 async function fetchRooms() {
     try {
         const dir = isAscending ? 'asc' : 'desc';
-        const res  = await fetch(`http://localhost:5000/api/rooms/all-rooms?page=${currentPage}&limit=${limit}&search=${encodeURIComponent(searchQuery)}&sort=${currentSortField}&dir=${dir}`);
+        const res  = await fetch(`https://boardingms.onrender.com/api/rooms/all-rooms?page=${currentPage}&limit=${limit}&search=${encodeURIComponent(searchQuery)}&sort=${currentSortField}&dir=${dir}`);
         const data = await res.json();
 
         globalRooms = data.rooms || [];
@@ -250,7 +250,7 @@ roomForm.addEventListener('submit', async (e) => {
     const url = isEdit ? '/api/rooms/update-room' : '/api/rooms/add-room';
 
     try {
-        const res    = await fetch(`http://localhost:5000${url}`, {
+        const res    = await fetch(`https://boardingms.onrender.com${url}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(roomData)
@@ -295,7 +295,7 @@ async function deleteRoom(roomNo) {
     if (!confirm(`Permanently delete Room ${roomNo}? This cannot be undone.`)) return;
 
     try {
-        const res = await fetch('http://localhost:5000/api/rooms/delete-room', {
+        const res = await fetch('https://boardingms.onrender.com/api/rooms/delete-room', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ room_no: roomNo })
@@ -314,7 +314,7 @@ async function deleteRoom(roomNo) {
 async function syncRooms() {
     if (!confirm("Recalculate all room occupancy counts from actual student assignments? This fixes any data mismatches.")) return;
     try {
-        const res    = await fetch('http://localhost:5000/api/admin/sync-rooms', {
+        const res    = await fetch('https://boardingms.onrender.com/api/admin/sync-rooms', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });
@@ -362,7 +362,7 @@ function setText(id, val) {
 //     try {
 //         const dir = isAscending ? 'asc' : 'desc';
 //         // Now sending page, limit, and search parameters to the backend
-//         const response = await fetch(`http://localhost:5000/api/rooms/all-rooms?page=${currentPage}&limit=${limit}&search=${searchQuery}&sort=${currentSortField}&dir=${dir}`);
+//         const response = await fetch(`https://boardingms.onrender.com/api/rooms/all-rooms?page=${currentPage}&limit=${limit}&search=${searchQuery}&sort=${currentSortField}&dir=${dir}`);
 //         const data = await response.json();
         
 //         // Backend now returns { rooms, totalPages, currentPage, totalRooms }
@@ -536,7 +536,7 @@ function setText(id, val) {
 //     const url = isEdit ? '/api/rooms/update-room' : '/api/rooms/add-room';
     
 //     try {
-//         const response = await fetch(`http://localhost:5000${url}`, {
+//         const response = await fetch(`https://boardingms.onrender.com${url}`, {
 //             method: 'POST',
 //             headers: { 'Content-Type': 'application/json' },
 //             body: JSON.stringify(roomData)
@@ -587,7 +587,7 @@ function setText(id, val) {
     
 //     if (confirm(`Are you sure you want to delete Room ${roomNo}? This cannot be undone.`)) {
 //         try {
-//             const response = await fetch('http://localhost:5000/api/rooms/delete-room', {
+//             const response = await fetch('https://boardingms.onrender.com/api/rooms/delete-room', {
 //                 method: 'POST',
 //                 headers: { 'Content-Type': 'application/json' },
 //                 body: JSON.stringify({ room_no: roomNo })

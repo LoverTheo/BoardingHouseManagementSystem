@@ -34,7 +34,7 @@ let paymentChart, studentChart;
 // ── Main loader ──
 async function loadDashboardData() {
     try {
-        const response = await fetch('http://localhost:5000/api/admin/dashboard-stats');
+        const response = await fetch('https://boardingms.onrender.com/api/admin/dashboard-stats');
         const data = await response.json();
 
         if (!data.success) {
@@ -208,11 +208,11 @@ function renderStudentChart(active, archived) {
 
 function downloadBackup() {
     // The browser just follows this link — the server sends back the file
-    window.location.href = 'http://localhost:5000/api/admin/backup';
+    window.location.href = 'https://boardingms.onrender.com/api/admin/backup';
 }
 
 function exportCSV(type) {
-    window.location.href = `http://localhost:5000/api/admin/export-csv?type=${type}`;
+    window.location.href = `https://boardingms.onrender.com/api/admin/export-csv?type=${type}`;
 }
 
 // ── Helpers ──

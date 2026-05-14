@@ -33,7 +33,7 @@ async function fetchStudents() {
         const search = document.getElementById('studentSearch').value.trim();
         const dir    = sortDirection ? 'asc' : 'desc';
 
-        const res  = await fetch(`http://localhost:5000/api/admin/all-users?search=${encodeURIComponent(search)}&sort=${currentSortField}&dir=${dir}&page=${currentPage}&limit=${itemsPerPage}`);
+        const res  = await fetch(`https://boardingms.onrender.com/api/admin/all-users?search=${encodeURIComponent(search)}&sort=${currentSortField}&dir=${dir}&page=${currentPage}&limit=${itemsPerPage}`);
         const data = await res.json();
 
         totalPages = data.totalPages || 1;
@@ -131,7 +131,7 @@ function updateStats(total) {
 // ── Fetch active/archived counts from dashboard stats ──
 async function fetchStudentStats() {
     try {
-        const res  = await fetch('http://localhost:5000/api/admin/dashboard-stats');
+        const res  = await fetch('https://boardingms.onrender.com/api/admin/dashboard-stats');
         const data = await res.json();
         if (!data.success) return;
 
@@ -210,7 +210,7 @@ function prepareAdd() {
 // ── 9. Prepare Edit ──
 async function prepareEdit(id) {
     try {
-        const res = await fetch(`http://localhost:5000/api/student/get-student/${id}`);
+        const res = await fetch(`https://boardingms.onrender.com/api/student/get-student/${id}`);
         const s   = await res.json();
 
         document.getElementById('modalTitle').textContent  = "Edit Boarder Profile";
@@ -248,7 +248,7 @@ async function manageBills(id, name) {
     billModal.show();
 
     try {
-        const res   = await fetch(`http://localhost:5000/api/student/get-bills/${id}`);
+        const res   = await fetch(`https://boardingms.onrender.com/api/student/get-bills/${id}`);
         const bills = await res.json();
 
         renderBillList(bills, false); // false = hide paid initially
@@ -348,7 +348,7 @@ async function updateSingleBill(billId, index) {
 
     try {
         // ✅ Fixed: now calls billController route
-        const res = await fetch('http://localhost:5000/api/bills/update-bill', {
+        const res = await fetch('https://boardingms.onrender.com/api/bills/update-bill', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ bill_id: billId, amount, due_date })
@@ -415,7 +415,7 @@ studentForm.addEventListener('submit', async (e) => {
     const url = isEdit ? '/api/admin/update-student' : '/api/admin/add-student';
 
     try {
-        const res    = await fetch(`http://localhost:5000${url}`, {
+        const res    = await fetch(`https://boardingms.onrender.com${url}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -464,7 +464,7 @@ function clearFormError() {
 async function archiveStudent(id) {
     if (!confirm(`Archive student ${id}? They will be moved out and their room freed.`)) return;
     try {
-        const res    = await fetch('http://localhost:5000/api/admin/archive-student', {
+        const res    = await fetch('https://boardingms.onrender.com/api/admin/archive-student', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ student_id: id })
@@ -484,7 +484,7 @@ async function archiveStudent(id) {
 async function deleteStudent(id) {
     if (!confirm(`Permanently delete student ${id}? This cannot be undone.`)) return;
     try {
-        const res    = await fetch('http://localhost:5000/api/admin/delete-student', {
+        const res    = await fetch('https://boardingms.onrender.com/api/admin/delete-student', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ student_id: id })
@@ -504,7 +504,7 @@ async function deleteStudent(id) {
 async function loadAvailableRooms(currentRoom = null) {
     try {
         // ✅ Fixed: now calls roomController route
-        const res   = await fetch('http://localhost:5000/api/rooms/all-rooms?limit=100');
+        const res   = await fetch('https://boardingms.onrender.com/api/rooms/all-rooms?limit=100');
         const data  = await res.json();
         const rooms = data.rooms || [];
 

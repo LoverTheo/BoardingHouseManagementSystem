@@ -48,7 +48,7 @@ const paidPerPage = 10;
 // ═══════════════════════════════════════════
 async function fetchAllBills() {
     try {
-        const res   = await fetch('http://localhost:5000/api/bills/all-bills');
+        const res   = await fetch('http://10.198.104.172:5000/api/bills/all-bills');
         const bills = await res.json();
 
         allBills = bills.map(b => ({
@@ -396,7 +396,7 @@ function setText(id, val) {
 async function markAsPaid(studentId, billId) {
     if (!confirm("Confirm payment for this bill?")) return;
     try {
-        const res    = await fetch('http://localhost:5000/api/bills/update-bill-status', {
+        const res    = await fetch('http://10.198.104.172:5000/api/bills/update-bill-status', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ student_id: studentId, bill_id: billId, status: 'paid' })
@@ -418,7 +418,7 @@ async function markAsPaid(studentId, billId) {
 async function deleteBill(billId) {
     if (!confirm(`Delete bill ${billId}? This cannot be undone.`)) return;
     try {
-        const res    = await fetch('http://localhost:5000/api/bills/delete-bill', {
+        const res    = await fetch('http://10.198.104.172:5000/api/bills/delete-bill', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ bill_id: billId })
@@ -441,7 +441,7 @@ async function triggerMonthlyBilling() {
     if (!confirm("Generate Rent and Electricity bills for all active students for the current month?")) return;
     try {
         const now = new Date();
-        const res = await fetch('http://localhost:5000/api/bills/generate-monthly', {
+        const res = await fetch('http://10.198.104.172:5000/api/bills/generate-monthly', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ month: now.getMonth() + 1, year: now.getFullYear() })

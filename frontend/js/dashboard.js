@@ -59,7 +59,7 @@ function buildCourseYear(profile) {
 // ── 2. Fetch bills ──
 async function fetchBills() {
     try {
-        const res   = await fetch(`http://10.198.104.172:5000/api/student/get-bills/${user.student_id}`);
+        const res   = await fetch(`https://boardingms.onrender.com/api/student/get-bills/${user.student_id}`);
         const bills = await res.json();
         allBills = (bills || []).map(b => ({ ...b, _status: effectiveStatus(b) }));
         updateStats();
@@ -285,7 +285,7 @@ function changePage(page) {
 async function requestPayment(billId) {
     if (!confirm("Submit this bill for admin payment review?")) return;
     try {
-        const res    = await fetch('http://10.198.104.172:5000/api/student/request-pay', {
+        const res    = await fetch('https://boardingms.onrender.com/api/student/request-pay', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ student_id: user.student_id, bill_id: billId })
